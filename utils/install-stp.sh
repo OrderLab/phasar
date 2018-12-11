@@ -66,8 +66,8 @@ version=$1
 mkdir -p $2 || err_and_exit "failed to create dest directory $2"
 dest_dir=$(cd $2 && pwd)
 mkdir -p ${dest_dir}/../{minisat,cryptominisat}
-minisat_base=${dest_dir}/../minisat
-cryptominisat_base=${dest_dir}/../cryptominisat
+minisat_base=$(dirname ${dest_dir})/minisat
+cryptominisat_base=$(dirname ${dest_dir})/cryptominisat
 cryptominisat_version=5.6.5
 
 install_minisat ${minisat_base}
@@ -77,5 +77,11 @@ install_cryptominisat ${cryptominisat_version} ${cryptominisat_base}
 cryptominisat_dist_dir=${cryptominisat_base}/${cryptominisat_version}/dist
 echo "CryptoMiniSAT installed to ${cryptominisat_dist_dir}"
 install_stp $version ${dest_dir} ${minisat_dist_dir} ${cryptominisat_dist_dir}
-stp_dist_dir=${dest_dir}/dist
+stp_dist_dir=${dest_dir}/${version}/dist
 echo "STP installed to ${stp_dist_dir}"
+stp_cmake_target=${stp_dist_dir}/lib/cmake/STP/STPTargets.cmake
+if [ -f "${stp_cmake_target}" ]; then
+  echo "Patching STP CMake targets..."
+  cryptominisat_lib_path="${cryptominisat_dist_dir}/lib/libcryptominisat5.a"
+  sed -i 's@\(INTERFACE_LINK_LIBRARIES .*\);libcryptominisat5;@\1;'"${cryptominisat_lib_path}"';@' "${stp_cmake_target}"
+fi
